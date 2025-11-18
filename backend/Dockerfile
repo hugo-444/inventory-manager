@@ -1,18 +1,21 @@
 # Use Node.js 20 LTS
 FROM node:20-alpine
 
+# Install Prisma CLI globally (needed for migrations)
+RUN npm install -g prisma
+
 # Set working directory
 WORKDIR /app
 
-# Install dependencies first (for better caching)
+# Copy package files first (for better Docker layer caching)
 COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --only=production=false
 
 # Generate Prisma Client
-RUN npm run prisma:generate
+RUN npx prisma generate
 
 # Copy source code
 COPY . .
@@ -23,6 +26,10 @@ RUN npm run build
 # Expose port
 EXPOSE 3000
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
 # Run migrations and start
-CMD ["sh", "-c", "npm run prisma:migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
 
