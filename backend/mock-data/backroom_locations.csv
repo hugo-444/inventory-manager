@@ -1,0 +1,9 @@
+locationCode,aisle,column,bay,isOverflow
+04C12,4,C,12,false
+04C01,4,C,1,false
+04C05,4,C,5,false
+01A10,1,A,10,false
+02B03,2,B,3,false
+O4TT88,,,"",true
+O1TT01,,,"",true
+

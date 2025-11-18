@@ -1,0 +1,77 @@
+.activity-page {
+  padding: 0 20px 20px;
+}
+
+.activity-header {
+  padding-top: 20px;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.activity-card {
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.activity-icon {
+  width: 48px;
+  height: 48px;
+  background: #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #dbeafe;
+  color: #2563eb;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.activity-product-id {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+  font-family: monospace;
+}
+
+.activity-notes {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.activity-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #999;
+}
+
+.activity-time svg {
+  width: 14px;
+  height: 14px;
+}
+

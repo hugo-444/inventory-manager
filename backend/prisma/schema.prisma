@@ -1,0 +1,341 @@
+// ======================================================
+//  PRISMA SCHEMA — Unified Inventory Manager (#imM)
+//  Supports:
+//  • Backroom Locations
+//  • Sales Floor Locations
+//  • Products, Styles, Variations
+//  • Inventory Movements
+//  • Location Code Parsing
+// ======================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ===============================================
+// ENUMS
+// ===============================================
+
+enum ParentFixtureType {
+  table
+  bunker
+  wall
+  wall_section
+  bar
+  bar_section
+  spinner
+  window
+  surrounding
+  custom
+}
+
+enum SectionType {
+  bunker
+  wall
+  wall_section
+  bar
+  bar_section
+  spinner
+  window
+  surrounding
+  overflow
+}
+
+enum BackroomBayType {
+  shelf
+  tray
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  UNCONFIGURED
+  DISCONTINUED
+}
+
+enum InventoryMovementType {
+  PLACE_IN_BACK
+  PULL_FROM_BACK
+  AUDIT_BACKROOM
+  PLACE_ON_FLOOR
+  MOVE_ON_FLOOR
+  REMOVE_FROM_FLOOR
+  MOVE
+  ADJUSTMENT
+  AUDIT_CORRECTION
+  RECEIVE
+  RETURN
+}
+
+// ===============================================
+// STYLE + PRODUCT MODELS
+// ===============================================
+
+model Style {
+  id           String  @id @default(uuid())
+  styleCode    String  @unique
+  name         String
+  description  String?
+  departmentId String?
+  metadata     Json? // JSON field for misc attributes, tags, etc.
+
+  department Department? @relation(fields: [departmentId], references: [id])
+  products   Product[]
+  variants   Variant[]
+
+  @@index([styleCode])
+  @@index([departmentId])
+}
+
+model Variant {
+  id          String  @id @default(uuid())
+  styleId     String
+  variantCode String
+  size        String?
+  color       String?
+  flavor      String?
+  packSize    String?
+  metadata    Json? // JSON field for misc attributes
+
+  style    Style     @relation(fields: [styleId], references: [id])
+  products Product[]
+
+  @@unique([styleId, variantCode])
+  @@index([styleId])
+}
+
+model Product {
+  id           String        @id @default(uuid())
+  upc          String        @unique
+  styleId      String?
+  variantId    String?
+  departmentId String?
+  name         String
+  price        Float?
+  color        String?
+  size         String?
+  imageUrl     String?
+  status       ProductStatus @default(UNCONFIGURED)
+  metadata     Json? // JSON field for misc info (brand, size label, flavor, etc.)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  department Department?              @relation(fields: [departmentId], references: [id])
+  style      Style?                   @relation(fields: [styleId], references: [id])
+  variant    Variant?                 @relation(fields: [variantId], references: [id])
+  salesStock ProductSalesFloorStock[]
+  backStock  ProductBackroomStock[]
+  movements  InventoryMovement[]
+
+  @@index([upc])
+  @@index([styleId])
+  @@index([variantId])
+  @@index([departmentId])
+  @@index([status])
+}
+
+// ===============================================
+// SALES FLOOR LOCATION SYSTEM
+// ===============================================
+
+model Department {
+  id       String @id @default(uuid())
+  code     String @unique
+  name     String
+  metadata Json? // JSON field for misc info
+
+  fixtures  ParentFixture[]
+  locations SalesFloorLocation[]
+  styles    Style[]
+  products  Product[]
+
+  @@index([code])
+}
+
+model ParentFixture {
+  id           String            @id @default(uuid())
+  departmentId String
+  parentCode   String
+  type         ParentFixtureType
+  description  String?
+
+  department Department           @relation(fields: [departmentId], references: [id])
+  sections   Section[]
+  locations  SalesFloorLocation[]
+
+  @@unique([departmentId, parentCode])
+  @@index([departmentId])
+  @@index([parentCode])
+}
+
+model Section {
+  id              String      @id @default(uuid())
+  parentFixtureId String
+  sectionCode     String
+  sectionType     SectionType
+  description     String?
+
+  parentFixture ParentFixture        @relation(fields: [parentFixtureId], references: [id])
+  locations     SalesFloorLocation[]
+
+  @@unique([parentFixtureId, sectionCode])
+  @@index([parentFixtureId])
+}
+
+model SalesFloorLocation {
+  id              String  @id @default(uuid())
+  departmentId    String
+  parentFixtureId String
+  sectionId       String?
+  locationCode    String  @unique
+
+  department    Department               @relation(fields: [departmentId], references: [id])
+  parentFixture ParentFixture            @relation(fields: [parentFixtureId], references: [id])
+  section       Section?                 @relation(fields: [sectionId], references: [id])
+  products      ProductSalesFloorStock[]
+  fromMovements InventoryMovement[]      @relation("FromFloor")
+  toMovements   InventoryMovement[]      @relation("ToFloor")
+
+  @@index([locationCode])
+  @@index([departmentId])
+  @@index([parentFixtureId])
+}
+
+model ProductSalesFloorStock {
+  id                   String    @id @default(uuid())
+  productId            String
+  salesFloorLocationId String
+  qty                  Int       @default(0)
+  lastAuditDate        DateTime?
+
+  product  Product            @relation(fields: [productId], references: [id])
+  location SalesFloorLocation @relation(fields: [salesFloorLocationId], references: [id])
+
+  @@unique([productId, salesFloorLocationId])
+  @@index([productId])
+  @@index([salesFloorLocationId])
+}
+
+// ===============================================
+// BACKROOM LOCATION SYSTEM
+// ===============================================
+
+model BackroomAisle {
+  id          String  @id @default(uuid())
+  aisleNumber Int     @unique
+  name        String?
+  description String?
+
+  columns   BackroomColumn[]
+  locations BackroomLocation[]
+
+  @@index([aisleNumber])
+}
+
+model BackroomColumn {
+  id           String @id @default(uuid())
+  aisleId      String
+  columnLetter String
+
+  aisle     BackroomAisle      @relation(fields: [aisleId], references: [id])
+  bays      BackroomBay[]
+  locations BackroomLocation[]
+
+  @@unique([aisleId, columnLetter])
+  @@index([aisleId])
+}
+
+model BackroomBay {
+  id        String          @id @default(uuid())
+  columnId  String
+  bayNumber Int // 1–20
+  type      BackroomBayType // shelf / tray
+
+  column    BackroomColumn     @relation(fields: [columnId], references: [id])
+  locations BackroomLocation[]
+
+  @@unique([columnId, bayNumber])
+  @@index([columnId])
+}
+
+model OverflowTote {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  description String?
+
+  locations BackroomLocation[]
+
+  @@index([code])
+}
+
+model BackroomLocation {
+  id             String  @id @default(uuid())
+  aisleId        String?
+  columnId       String?
+  bayId          String?
+  overflowToteId String?
+  locationCode   String  @unique
+
+  aisle        BackroomAisle?  @relation(fields: [aisleId], references: [id])
+  column       BackroomColumn? @relation(fields: [columnId], references: [id])
+  bay          BackroomBay?    @relation(fields: [bayId], references: [id])
+  overflowTote OverflowTote?   @relation(fields: [overflowToteId], references: [id])
+
+  stock         ProductBackroomStock[]
+  fromMovements InventoryMovement[]    @relation("FromBackroom")
+  toMovements   InventoryMovement[]    @relation("ToBackroom")
+
+  @@index([locationCode])
+}
+
+model ProductBackroomStock {
+  id                 String    @id @default(uuid())
+  productId          String
+  backroomLocationId String
+  qty                Int       @default(0)
+  lastAuditDate      DateTime?
+
+  product  Product          @relation(fields: [productId], references: [id])
+  location BackroomLocation @relation(fields: [backroomLocationId], references: [id])
+
+  @@unique([productId, backroomLocationId])
+  @@index([productId])
+  @@index([backroomLocationId])
+}
+
+// ===============================================
+// INVENTORY MOVEMENTS (MASTER LOG)
+// ===============================================
+
+model InventoryMovement {
+  id                       String                @id @default(uuid())
+  productId                String
+  fromBackroomLocationId   String?
+  toBackroomLocationId     String?
+  fromSalesFloorLocationId String?
+  toSalesFloorLocationId   String?
+  qty                      Int
+  type                     InventoryMovementType
+  reason                   String? // e.g., "customer pickup", "restock floor", "markout"
+  performedBy              String? // userId or string identifier
+  timestamp                DateTime              @default(now())
+  notes                    String?
+
+  product Product @relation(fields: [productId], references: [id])
+
+  fromBackroomLocation BackroomLocation? @relation("FromBackroom", fields: [fromBackroomLocationId], references: [id])
+  toBackroomLocation   BackroomLocation? @relation("ToBackroom", fields: [toBackroomLocationId], references: [id])
+
+  fromSalesFloorLocation SalesFloorLocation? @relation("FromFloor", fields: [fromSalesFloorLocationId], references: [id])
+  toSalesFloorLocation   SalesFloorLocation? @relation("ToFloor", fields: [toSalesFloorLocationId], references: [id])
+
+  @@index([productId])
+  @@index([timestamp])
+  @@index([type])
+  @@index([performedBy])
+}

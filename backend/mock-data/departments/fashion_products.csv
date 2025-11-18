@@ -1,0 +1,6 @@
+upc,styleCode,name,price,color,size,imageUrl
+123456789012,UT03-DENIM,Denim Jacket,34.99,Blue,M,https://picsum.photos/300
+123456789013,UT03-DENIM,Denim Jacket,34.99,Black,L,https://picsum.photos/300
+123456789014,MT02-TOP,Crop Top,19.99,Pink,S,https://picsum.photos/200
+123456789015,MT02-TOP,Crop Top,19.99,White,M,https://picsum.photos/200
+

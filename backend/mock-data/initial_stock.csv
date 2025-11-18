@@ -1,0 +1,8 @@
+upc,locationCode,locationType,qty
+123456789012,04C12,backroom,10
+123456789012,FashMT02(99),salesfloor,3
+123456789013,04C01,backroom,5
+123456789014,FashMT02(2),salesfloor,2
+555555555555,01A10,backroom,8
+777777777777,02B03,backroom,12
+

@@ -1,0 +1,49 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.app {
+  min-height: 100vh;
+  background: #ffffff;
+  padding-bottom: 80px; /* Space for bottom nav */
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  padding: 20px 20px 0;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  padding: 0 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 12px 20px;
+  margin: 20px;
+  border-radius: 8px;
+  border: 1px solid #fcc;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 16px;
+}
