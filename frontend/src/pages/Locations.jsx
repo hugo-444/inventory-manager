@@ -9,6 +9,7 @@ export default function Locations() {
   const [salesFloorLocations, setSalesFloorLocations] = useState([]);
   const [expandedItems, setExpandedItems] = useState(new Set(['warehouse']));
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -44,15 +45,19 @@ export default function Locations() {
   const loadLocations = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [backroom, salesFloor] = await Promise.all([
         api.getBackroomLocations(),
         api.getSalesFloorLocations(),
       ]);
-      setBackroomLocations(backroom);
-      setSalesFloorLocations(salesFloor);
+      // Ensure we always set arrays
+      setBackroomLocations(Array.isArray(backroom) ? backroom : []);
+      setSalesFloorLocations(Array.isArray(salesFloor) ? salesFloor : []);
     } catch (err) {
       console.error('Failed to load locations:', err);
-      showNotification('Failed to load locations: ' + err.message, 'error');
+      const errorMessage = err?.message || 'Failed to load locations';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -61,21 +66,25 @@ export default function Locations() {
   const loadDepartments = async () => {
     try {
       const depts = await api.getDepartments();
-      setDepartments(depts);
+      setDepartments(Array.isArray(depts) ? depts : []);
     } catch (err) {
       console.error('Failed to load departments:', err);
+      setDepartments([]);
     }
   };
 
   const loadParentFixtures = async () => {
     try {
-      const dept = departments.find(d => d.code === newLocationData.departmentCode);
-      if (dept) {
+      const dept = Array.isArray(departments) ? departments.find(d => d && d.code === newLocationData.departmentCode) : null;
+      if (dept && dept.id) {
         const fixtures = await api.getParentFixtures(dept.id);
-        setParentFixtures(fixtures);
+        setParentFixtures(Array.isArray(fixtures) ? fixtures : []);
+      } else {
+        setParentFixtures([]);
       }
     } catch (err) {
       console.error('Failed to load parent fixtures:', err);
+      setParentFixtures([]);
     }
   };
 
@@ -177,22 +186,27 @@ export default function Locations() {
         }
         
         // Fetch full product details to get style codes
-        const productsWithDetails = await Promise.all(
-          products.map(async (item) => {
-            try {
-              const product = await api.getProductById(item.productId);
-              return {
-                ...item,
-                styleCode: product.style?.styleCode || null,
-                styleName: product.style?.name || null,
-                departmentName: product.department?.name || null,
-              };
-            } catch {
-              return item;
-            }
-          })
-        );
-        setLocationProducts(productsWithDetails);
+        if (Array.isArray(products) && products.length > 0) {
+          const productsWithDetails = await Promise.all(
+            products.map(async (item) => {
+              if (!item || !item.productId) return null;
+              try {
+                const product = await api.getProductById(item.productId);
+                return {
+                  ...item,
+                  styleCode: product?.style?.styleCode || null,
+                  styleName: product?.style?.name || null,
+                  departmentName: product?.department?.name || null,
+                };
+              } catch {
+                return item;
+              }
+            })
+          );
+          setLocationProducts(productsWithDetails.filter(Boolean));
+        } else {
+          setLocationProducts([]);
+        }
       }
     } catch (err) {
       console.error('Failed to load location products:', err);
@@ -201,6 +215,19 @@ export default function Locations() {
   };
 
   if (loading) return <div className="loading">Loading locations...</div>;
+  if (error) {
+    return (
+      <div className="locations-page">
+        <h1 className="page-title">Locations</h1>
+        <div className="error-message" style={{ padding: '1rem', margin: '1rem 0' }}>
+          {error}
+          <div style={{ marginTop: '0.5rem', fontSize: '14px', color: '#666' }}>
+            Check browser console for details. Verify backend is running at the correct URL.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="locations-page">
@@ -243,7 +270,7 @@ export default function Locations() {
           {expandedItems.has('warehouse') && (
             <div className="hierarchy-children">
               {/* Backroom Aisles */}
-              {Array.from(new Set(backroomLocations.map(l => l.aisle?.aisleNumber).filter(Boolean))).map((aisleNum) => (
+              {Array.isArray(backroomLocations) && Array.from(new Set(backroomLocations.map(l => l?.aisle?.aisleNumber).filter(Boolean))).map((aisleNum) => (
                 <div key={`aisle-${aisleNum}`} className="hierarchy-item nested">
                   <div
                     className="hierarchy-row"
@@ -269,18 +296,20 @@ export default function Locations() {
                   </div>
                   {expandedItems.has(`aisle-${aisleNum}`) && (
                     <div className="hierarchy-children">
-                      {backroomLocations
-                        .filter(l => l.aisle?.aisleNumber === aisleNum)
+                      {Array.isArray(backroomLocations) && backroomLocations
+                        .filter(l => l && l.aisle?.aisleNumber === aisleNum)
                         .map((loc) => (
-                          <div key={loc.id} className="hierarchy-item nested">
-                            <div className="hierarchy-row" onClick={() => handleLocationClick(loc)}>
-                              <svg className="shelf-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2"></rect>
-                              </svg>
-                              <span className="hierarchy-label">{loc.locationCode}</span>
-                              <span className="hierarchy-code">{loc.bay?.type || 'location'}</span>
+                          loc && loc.id ? (
+                            <div key={loc.id} className="hierarchy-item nested">
+                              <div className="hierarchy-row" onClick={() => handleLocationClick(loc)}>
+                                <svg className="shelf-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2"></rect>
+                                </svg>
+                                <span className="hierarchy-label">{loc.locationCode || 'Unknown'}</span>
+                                <span className="hierarchy-code">{loc.bay?.type || 'location'}</span>
+                              </div>
                             </div>
-                          </div>
+                          ) : null
                         ))}
                     </div>
                   )}
@@ -288,16 +317,18 @@ export default function Locations() {
               ))}
 
               {/* Sales Floor Locations */}
-              {salesFloorLocations.map((loc) => (
-                <div key={loc.id} className="hierarchy-item nested">
-                  <div className="hierarchy-row" onClick={() => handleLocationClick(loc)}>
-                    <svg className="shelf-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2"></rect>
-                    </svg>
-                    <span className="hierarchy-label">{loc.locationCode}</span>
-                    <span className="hierarchy-code">{loc.department?.code || ''}</span>
+              {Array.isArray(salesFloorLocations) && salesFloorLocations.map((loc) => (
+                loc && loc.id ? (
+                  <div key={loc.id} className="hierarchy-item nested">
+                    <div className="hierarchy-row" onClick={() => handleLocationClick(loc)}>
+                      <svg className="shelf-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2"></rect>
+                      </svg>
+                      <span className="hierarchy-label">{loc.locationCode || 'Unknown'}</span>
+                      <span className="hierarchy-code">{loc.department?.code || ''}</span>
+                    </div>
                   </div>
-                </div>
+                ) : null
               ))}
             </div>
           )}
@@ -354,17 +385,19 @@ export default function Locations() {
                   required
                 >
                   <option value="">Select department...</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.code}>
-                      {dept.name} ({dept.code})
-                    </option>
+                  {Array.isArray(departments) && departments.map((dept) => (
+                    dept && dept.id ? (
+                      <option key={dept.id} value={dept.code}>
+                        {dept.name || 'Unnamed'} ({dept.code || 'N/A'})
+                      </option>
+                    ) : null
                   ))}
                 </select>
               </div>
               {newLocationData.departmentCode && (
                 <div className="modal-form-group">
                   <label className="modal-form-label">Parent Fixture</label>
-                  {parentFixtures.length > 0 ? (
+                  {Array.isArray(parentFixtures) && parentFixtures.length > 0 ? (
                     <select
                       className="modal-form-select"
                       value={newLocationData.parentCode}
@@ -373,9 +406,11 @@ export default function Locations() {
                     >
                       <option value="">Select fixture...</option>
                       {parentFixtures.map((fixture) => (
-                        <option key={fixture.id} value={fixture.parentCode}>
-                          {fixture.parentCode} ({fixture.type})
-                        </option>
+                        fixture && fixture.id ? (
+                          <option key={fixture.id} value={fixture.parentCode}>
+                            {fixture.parentCode || 'N/A'} ({fixture.type || 'N/A'})
+                          </option>
+                        ) : null
                       ))}
                     </select>
                   ) : (
@@ -517,60 +552,65 @@ export default function Locations() {
                 </div>
               )}
 
-              {locationProducts.length > 0 ? (
+              {Array.isArray(locationProducts) && locationProducts.length > 0 ? (
                 <div className="modal-stock-list">
                   {[...locationProducts]
+                    .filter(item => item && item.productId)
                     .sort((a, b) => {
                       if (sortBy === 'style') {
-                        const aStyle = a.styleCode || '';
-                        const bStyle = b.styleCode || '';
-                        if (aStyle === bStyle) return a.name.localeCompare(b.name);
+                        const aStyle = a?.styleCode || '';
+                        const bStyle = b?.styleCode || '';
+                        if (aStyle === bStyle) return (a?.name || '').localeCompare(b?.name || '');
                         return aStyle.localeCompare(bStyle);
                       } else if (sortBy === 'qty') {
-                        return b.qty - a.qty;
+                        return (b?.qty || 0) - (a?.qty || 0);
                       } else if (sortBy === 'qtyAsc') {
-                        return a.qty - b.qty;
+                        return (a?.qty || 0) - (b?.qty || 0);
                       } else if (sortBy === 'upc') {
-                        return a.upc.localeCompare(b.upc);
+                        return (a?.upc || '').localeCompare(b?.upc || '');
                       } else {
-                        return a.name.localeCompare(b.name);
+                        return (a?.name || '').localeCompare(b?.name || '');
                       }
                     })
                     .map((item) => (
-                      <div 
-                        key={item.productId} 
-                        className="modal-stock-item" 
-                        style={{ 
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '12px',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          marginBottom: '8px',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        onClick={() => {
-                          window.location.href = `/#/products?search=${item.upc}`;
-                        }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.name}</div>
-                          <div style={{ fontSize: '12px', color: '#666', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                            <span>UPC: {item.upc}</span>
-                            {item.styleCode && <span>Style: <strong>{item.styleCode}</strong></span>}
-                            {item.styleName && <span>({item.styleName})</span>}
-                            {item.departmentName && <span>Dept: {item.departmentName}</span>}
+                      item && item.productId ? (
+                        <div 
+                          key={item.productId} 
+                          className="modal-stock-item" 
+                          style={{ 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            marginBottom: '8px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          onClick={() => {
+                            if (item.upc) {
+                              window.location.href = `/#/products?search=${item.upc}`;
+                            }
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.name || 'Unnamed Product'}</div>
+                            <div style={{ fontSize: '12px', color: '#666', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                              <span>UPC: {item.upc || 'N/A'}</span>
+                              {item.styleCode && <span>Style: <strong>{item.styleCode}</strong></span>}
+                              {item.styleName && <span>({item.styleName})</span>}
+                              {item.departmentName && <span>Dept: {item.departmentName}</span>}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right', marginLeft: '16px' }}>
+                            <div style={{ fontWeight: 600, fontSize: '20px', color: '#3b82f6' }}>{item.qty || 0}</div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>units</div>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right', marginLeft: '16px' }}>
-                          <div style={{ fontWeight: 600, fontSize: '20px', color: '#3b82f6' }}>{item.qty}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>units</div>
-                        </div>
-                      </div>
+                      ) : null
                     ))}
                 </div>
               ) : (

@@ -204,6 +204,7 @@ model SalesFloorLocation {
   @@index([locationCode])
   @@index([departmentId])
   @@index([parentFixtureId])
+  @@index([sectionId])
 }
 
 model ProductSalesFloorStock {
@@ -291,6 +292,10 @@ model BackroomLocation {
   toMovements   InventoryMovement[]    @relation("ToBackroom")
 
   @@index([locationCode])
+  @@index([aisleId])
+  @@index([columnId])
+  @@index([bayId])
+  @@index([overflowToteId])
 }
 
 model ProductBackroomStock {
@@ -338,4 +343,9 @@ model InventoryMovement {
   @@index([timestamp])
   @@index([type])
   @@index([performedBy])
+  @@index([fromBackroomLocationId])
+  @@index([toBackroomLocationId])
+  @@index([fromSalesFloorLocationId])
+  @@index([toSalesFloorLocationId])
+  @@index([productId, timestamp])
 }

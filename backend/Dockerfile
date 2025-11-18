@@ -11,8 +11,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci --only=production=false
+# Install dependencies (including dev dependencies for build)
+# Use npm install instead of npm ci to handle cases without lock file
+RUN npm install
 
 # Generate Prisma Client
 RUN npx prisma generate

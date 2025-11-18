@@ -83,9 +83,11 @@ export default function Products() {
       }
       
       console.log('💾 Setting products state...');
-      setProducts(data);
-      setFilteredProducts(data);
-      console.log('✅ Products state updated with', data.length, 'products');
+      // Ensure we always set an array
+      const productsArray = Array.isArray(data) ? data : [];
+      setProducts(productsArray);
+      setFilteredProducts(productsArray);
+      console.log('✅ Products state updated with', productsArray.length, 'products');
     } catch (err) {
       console.error('❌ Failed to load products - Full error:', {
         message: err.message,
@@ -107,8 +109,13 @@ export default function Products() {
   }, []);
 
   const getTotalStock = (product) => {
-    const backroomStock = product.backStock?.reduce((sum, s) => sum + s.qty, 0) || 0;
-    const salesStock = product.salesStock?.reduce((sum, s) => sum + s.qty, 0) || 0;
+    if (!product) return 0;
+    const backroomStock = Array.isArray(product.backStock) 
+      ? product.backStock.reduce((sum, s) => sum + (s?.qty || 0), 0) 
+      : 0;
+    const salesStock = Array.isArray(product.salesStock) 
+      ? product.salesStock.reduce((sum, s) => sum + (s?.qty || 0), 0) 
+      : 0;
     return backroomStock + salesStock;
   };
 
@@ -306,8 +313,10 @@ export default function Products() {
               }}
             >
               <option value="">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              {Array.isArray(departments) && departments.map(dept => (
+                dept && dept.id ? (
+                  <option key={dept.id} value={dept.id}>{dept.name || 'Unnamed'}</option>
+                ) : null
               ))}
             </select>
           </div>
@@ -335,8 +344,10 @@ export default function Products() {
               }}
             >
               <option value="">All Styles</option>
-              {styles.map(style => (
-                <option key={style.id} value={style.id}>{style.name} ({style.styleCode})</option>
+              {Array.isArray(styles) && styles.map(style => (
+                style && style.id ? (
+                  <option key={style.id} value={style.id}>{style.name || 'Unnamed'} ({style.styleCode || 'N/A'})</option>
+                ) : null
               ))}
             </select>
           </div>
@@ -481,44 +492,47 @@ export default function Products() {
             )}
           </div>
         ) : (
-          filteredProducts.map((product) => {
-            const totalStock = getTotalStock(product);
-            return (
-            <div
-              key={product.id}
-              className="product-card"
-              onClick={() => {
-                setSelectedProduct(product);
-                setShowProductModal(true);
-              }}
-            >
-              <div className="product-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2"></rect>
-                  <path d="M3 9h18M9 21V9" strokeWidth="2"></path>
-                </svg>
-              </div>
-              <div className="product-info">
-                <h3 className="product-name">{product.name}</h3>
-                <p className="product-id">{product.upc}</p>
-                {product.status === 'UNCONFIGURED' && (
-                  <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 600 }}>⚠️ Needs Configuration</span>
-                )}
-                <div className="product-meta">
-                  <span className="product-price">
-                    {product.price !== null && product.price !== undefined ? `$${product.price}` : 'Price TBD'}
-                  </span>
-                  <span className={`stock-badge ${totalStock > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                    {totalStock} in stock
-                  </span>
+          Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => {
+              if (!product || !product.id) return null;
+              const totalStock = getTotalStock(product);
+              return (
+                <div
+                  key={product.id}
+                  className="product-card"
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowProductModal(true);
+                  }}
+                >
+                  <div className="product-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2"></rect>
+                      <path d="M3 9h18M9 21V9" strokeWidth="2"></path>
+                    </svg>
+                  </div>
+                  <div className="product-info">
+                    <h3 className="product-name">{product.name || 'Unnamed Product'}</h3>
+                    <p className="product-id">{product.upc || 'No UPC'}</p>
+                    {product.status === 'UNCONFIGURED' && (
+                      <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 600 }}>⚠️ Needs Configuration</span>
+                    )}
+                    <div className="product-meta">
+                      <span className="product-price">
+                        {product.price !== null && product.price !== undefined ? `$${product.price}` : 'Price TBD'}
+                      </span>
+                      <span className={`stock-badge ${totalStock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                        {totalStock} in stock
+                      </span>
+                    </div>
+                  </div>
+                  <svg className="arrow-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M5 12h14M12 5l7 7-7 7" strokeWidth="2"></path>
+                  </svg>
                 </div>
-              </div>
-              <svg className="arrow-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M5 12h14M12 5l7 7-7 7" strokeWidth="2"></path>
-              </svg>
-            </div>
-          );
-          })
+              );
+            })
+          ) : null
         )}
       </div>
 
@@ -578,41 +592,47 @@ export default function Products() {
               {selectedProduct.style && (
                 <div className="modal-field">
                   <span className="modal-field-label">Style</span>
-                  <div className="modal-field-value">{selectedProduct.style.name} ({selectedProduct.style.styleCode})</div>
+                  <div className="modal-field-value">
+                    {selectedProduct.style.name || 'N/A'} ({selectedProduct.style.styleCode || 'N/A'})
+                  </div>
                 </div>
               )}
             </div>
 
             <div className="modal-section">
               <h3 className="modal-section-title">Stock Locations</h3>
-              {selectedProduct.backStock && selectedProduct.backStock.length > 0 && (
+              {Array.isArray(selectedProduct.backStock) && selectedProduct.backStock.length > 0 && (
                 <div>
                   <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#666' }}>Backroom</h4>
                   <div className="modal-stock-list">
                     {selectedProduct.backStock.map((stock) => (
-                      <div key={stock.id} className="modal-stock-item">
-                        <span className="modal-stock-location">{stock.location?.locationCode || 'Unknown'}</span>
-                        <span className="modal-stock-qty">{stock.qty} units</span>
-                      </div>
+                      stock && stock.id ? (
+                        <div key={stock.id} className="modal-stock-item">
+                          <span className="modal-stock-location">{stock.location?.locationCode || 'Unknown'}</span>
+                          <span className="modal-stock-qty">{stock.qty || 0} units</span>
+                        </div>
+                      ) : null
                     ))}
                   </div>
                 </div>
               )}
-              {selectedProduct.salesStock && selectedProduct.salesStock.length > 0 && (
+              {Array.isArray(selectedProduct.salesStock) && selectedProduct.salesStock.length > 0 && (
                 <div style={{ marginTop: '16px' }}>
                   <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#666' }}>Sales Floor</h4>
                   <div className="modal-stock-list">
                     {selectedProduct.salesStock.map((stock) => (
-                      <div key={stock.id} className="modal-stock-item">
-                        <span className="modal-stock-location">{stock.location?.locationCode || 'Unknown'}</span>
-                        <span className="modal-stock-qty">{stock.qty} units</span>
-                      </div>
+                      stock && stock.id ? (
+                        <div key={stock.id} className="modal-stock-item">
+                          <span className="modal-stock-location">{stock.location?.locationCode || 'Unknown'}</span>
+                          <span className="modal-stock-qty">{stock.qty || 0} units</span>
+                        </div>
+                      ) : null
                     ))}
                   </div>
                 </div>
               )}
-              {(!selectedProduct.backStock || selectedProduct.backStock.length === 0) &&
-                (!selectedProduct.salesStock || selectedProduct.salesStock.length === 0) && (
+              {(!Array.isArray(selectedProduct.backStock) || selectedProduct.backStock.length === 0) &&
+                (!Array.isArray(selectedProduct.salesStock) || selectedProduct.salesStock.length === 0) && (
                   <p style={{ color: '#999', fontStyle: 'italic' }}>No stock assigned to locations</p>
                 )}
             </div>
@@ -836,9 +856,6 @@ export default function Products() {
         />
       )}
 
-      {filteredProducts.length === 0 && (
-        <div className="empty-state">No products found</div>
-      )}
 
       <ProductEditModal
         product={selectedProduct}

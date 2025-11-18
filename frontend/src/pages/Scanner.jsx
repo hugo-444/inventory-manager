@@ -453,7 +453,7 @@ export default function Scanner() {
         <div className="product-result" onClick={() => setShowProductModal(true)} style={{ cursor: 'pointer' }}>
           <h3>{product.name}</h3>
           <p>UPC: {product.upc}</p>
-          <p>Price: ${product.price}</p>
+          <p>Price: {product.price !== null && product.price !== undefined ? `$${product.price}` : 'Price TBD'}</p>
           {product.color && <p>Color: {product.color}</p>}
           {product.size && <p>Size: {product.size}</p>}
           {product.style && <p>Style: {product.style.name}</p>}
@@ -475,7 +475,11 @@ export default function Scanner() {
               </div>
               <div className="modal-field">
                 <span className="modal-field-label">Price</span>
-                <div className="modal-field-value">${product.price}</div>
+                <div className="modal-field-value">
+                  {product.price !== null && product.price !== undefined 
+                    ? `$${product.price}` 
+                    : 'Not set'}
+                </div>
               </div>
               {product.color && (
                 <div className="modal-field">
