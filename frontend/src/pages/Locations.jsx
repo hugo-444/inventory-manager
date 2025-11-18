@@ -479,48 +479,48 @@ export default function Locations() {
             <div className="modal-section">
               <div className="modal-field">
                 <span className="modal-field-label">Location Code</span>
-                <div className="modal-field-value">{selectedLocation.locationCode}</div>
+                <div className="modal-field-value">{selectedLocation.locationCode || ''}</div>
               </div>
               {selectedLocation.department && (
                 <div className="modal-field">
                   <span className="modal-field-label">Department</span>
-                  <div className="modal-field-value">{selectedLocation.department.name} ({selectedLocation.department.code})</div>
+                  <div className="modal-field-value">{selectedLocation.department?.name || ''} ({selectedLocation.department?.code || ''})</div>
                 </div>
               )}
               {selectedLocation.parentFixture && (
                 <div className="modal-field">
                   <span className="modal-field-label">Parent Fixture</span>
-                  <div className="modal-field-value">{selectedLocation.parentFixture.parentCode} ({selectedLocation.parentFixture.type})</div>
+                  <div className="modal-field-value">{selectedLocation.parentFixture?.parentCode || ''} ({selectedLocation.parentFixture?.type || ''})</div>
                 </div>
               )}
               {selectedLocation.section && (
                 <div className="modal-field">
                   <span className="modal-field-label">Section</span>
-                  <div className="modal-field-value">{selectedLocation.section.sectionCode} ({selectedLocation.section.sectionType})</div>
+                  <div className="modal-field-value">{selectedLocation.section?.sectionCode || ''} ({selectedLocation.section?.sectionType || ''})</div>
                 </div>
               )}
               {selectedLocation.aisle && (
                 <div className="modal-field">
                   <span className="modal-field-label">Aisle</span>
-                  <div className="modal-field-value">{selectedLocation.aisle.aisleNumber}</div>
+                  <div className="modal-field-value">{selectedLocation.aisle?.aisleNumber || ''}</div>
                 </div>
               )}
               {selectedLocation.column && (
                 <div className="modal-field">
                   <span className="modal-field-label">Column</span>
-                  <div className="modal-field-value">{selectedLocation.column.columnLetter}</div>
+                  <div className="modal-field-value">{selectedLocation.column?.columnLetter || ''}</div>
                 </div>
               )}
               {selectedLocation.bay && (
                 <div className="modal-field">
                   <span className="modal-field-label">Bay</span>
-                  <div className="modal-field-value">{selectedLocation.bay.bayNumber} ({selectedLocation.bay.type})</div>
+                  <div className="modal-field-value">{selectedLocation.bay?.bayNumber || ''} ({selectedLocation.bay?.type || ''})</div>
                 </div>
               )}
               {selectedLocation.overflowTote && (
                 <div className="modal-field">
                   <span className="modal-field-label">Overflow Tote</span>
-                  <div className="modal-field-value">{selectedLocation.overflowTote.code}</div>
+                  <div className="modal-field-value">{selectedLocation.overflowTote?.code || ''}</div>
                 </div>
               )}
             </div>

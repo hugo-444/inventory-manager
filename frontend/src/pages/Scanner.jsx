@@ -333,9 +333,9 @@ export default function Scanner() {
       const products = await api.getProducts();
       const found = products.find(
         (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.upc.includes(searchQuery) ||
-          p.style?.styleCode.toLowerCase().includes(searchQuery.toLowerCase())
+          (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.upc || '').includes(searchQuery) ||
+          (p.style?.styleCode || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
       if (found) {
         setProduct(found);
@@ -451,12 +451,12 @@ export default function Scanner() {
 
       {product && (
         <div className="product-result" onClick={() => setShowProductModal(true)} style={{ cursor: 'pointer' }}>
-          <h3>{product.name}</h3>
-          <p>UPC: {product.upc}</p>
+          <h3>{product.name || ''}</h3>
+          <p>UPC: {product.upc || ''}</p>
           <p>Price: {product.price !== null && product.price !== undefined ? `$${product.price}` : 'Price TBD'}</p>
           {product.color && <p>Color: {product.color}</p>}
           {product.size && <p>Size: {product.size}</p>}
-          {product.style && <p>Style: {product.style.name}</p>}
+          {product.style && <p>Style: {product.style?.name || ''}</p>}
           <p style={{ marginTop: '12px', color: '#2563eb', fontSize: '14px' }}>Tap for details →</p>
         </div>
       )}
@@ -471,7 +471,7 @@ export default function Scanner() {
             <div className="modal-section">
               <div className="modal-field">
                 <span className="modal-field-label">UPC</span>
-                <div className="modal-field-value">{product.upc}</div>
+                <div className="modal-field-value">{product.upc || ''}</div>
               </div>
               <div className="modal-field">
                 <span className="modal-field-label">Price</span>
@@ -496,7 +496,7 @@ export default function Scanner() {
               {product.style && (
                 <div className="modal-field">
                   <span className="modal-field-label">Style</span>
-                  <div className="modal-field-value">{product.style.name} ({product.style.styleCode})</div>
+                  <div className="modal-field-value">{product.style?.name || ''} ({product.style?.styleCode || ''})</div>
                 </div>
               )}
             </div>

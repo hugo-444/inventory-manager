@@ -84,8 +84,8 @@ export class StyleService {
           include: {
             products: {
               include: {
-                backStock: true,
-                salesStock: true,
+                backStock: { include: { location: true } },
+                salesStock: { include: { location: true } },
               },
             },
           },
@@ -107,15 +107,15 @@ export class StyleService {
       };
 
       variant.products.forEach((product) => {
-        product.backStock.forEach((stock) => {
+        (product.backStock || []).forEach((stock) => {
           totalBackroomQty += stock.qty;
-          if (!locations.backroom.includes(stock.location.locationCode)) {
+          if (stock.location && !locations.backroom.includes(stock.location.locationCode)) {
             locations.backroom.push(stock.location.locationCode);
           }
         });
-        product.salesStock.forEach((stock) => {
+        (product.salesStock || []).forEach((stock) => {
           totalSalesFloorQty += stock.qty;
-          if (!locations.salesFloor.includes(stock.location.locationCode)) {
+          if (stock.location && !locations.salesFloor.includes(stock.location.locationCode)) {
             locations.salesFloor.push(stock.location.locationCode);
           }
         });

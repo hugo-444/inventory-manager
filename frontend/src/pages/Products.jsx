@@ -48,8 +48,8 @@ export default function Products() {
     } else {
       const filtered = products.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.upc.includes(searchQuery) ||
+          (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.upc || '').includes(searchQuery) ||
           (p.style?.styleCode && p.style.styleCode.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       setFilteredProducts(filtered);
