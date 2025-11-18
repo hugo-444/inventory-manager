@@ -1,13 +1,13 @@
-# Inventory Manager Documentation
+# Documentation
 
 ## Overview
 
-This directory contains comprehensive documentation for the Inventory Manager application.
+Complete documentation for the Inventory Manager application.
 
 ## Documentation Files
 
 ### [actions.md](./actions.md)
-**Complete action documentation** - Every action the app can perform, with:
+**Complete action documentation** - Every action the app can perform:
 - HTTP endpoints
 - Request/response shapes
 - State changes
@@ -20,11 +20,12 @@ Use this as the **canonical reference** for:
 - Onboarding new developers
 - API integration
 
-### [codebase-walkthrough.md](./codebase-walkthrough.md) (Future)
-Step-by-step guide for navigating the codebase structure.
-
-### [api-reference.md](./api-reference.md) (Future)
-Complete API reference with all endpoints, parameters, and examples.
+### [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
+Current implementation status tracking:
+- Completed features
+- Pending implementation
+- Migration checklist
+- Master spec compliance
 
 ## Quick Start for Developers
 
@@ -37,10 +38,9 @@ Complete API reference with all endpoints, parameters, and examples.
 
 When adding new features:
 1. Document the action in `actions.md` following the template
-2. Update this README if adding new doc files
+2. Update `IMPLEMENTATION_STATUS.md` if needed
 3. Keep documentation in sync with code changes
 
 ---
 
 **See [actions.md](./actions.md) for the complete action reference.**
-

@@ -8,6 +8,10 @@ export default defineConfig({
     host: '0.0.0.0', // Allow access from network
     port: 5173,
     strictPort: false,
+    allowedHosts: 
+    [
+      'elva-semidetached-thematically.ngrok-free.dev'
+    ],
   },
   build: {
     outDir: 'dist',

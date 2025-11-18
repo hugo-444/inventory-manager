@@ -1,8 +1,74 @@
-# Deployment Guide - Beta Version
+# 🚀 Deployment Guide
 
-## Quick Beta Deployment (Recommended for Tomorrow)
+Complete guide for deploying the Inventory Manager app to production.
 
-### Option 1: ngrok (Fastest - 5 minutes)
+## Quick Start: Railway (Recommended)
+
+**Why Railway?**
+- ✅ HTTPS automatically (required for camera)
+- ✅ PostgreSQL database included
+- ✅ Free tier ($5 credit/month)
+- ✅ Auto-deploys from GitHub
+- ✅ 10-minute setup
+
+### Step 1: Push to GitHub
+
+```bash
+git add .
+git commit -m "Ready for Railway deployment"
+git push origin main
+```
+
+### Step 2: Deploy Backend
+
+1. Go to [railway.app](https://railway.app) and sign up (use GitHub)
+2. Click **"New Project"** → **"Deploy from GitHub repo"**
+3. Choose your `inventory-manager` repo
+4. **Configure Backend Service:**
+   - **Root Directory:** `backend` (in Settings)
+   - **Add PostgreSQL:** Click "+ New" → "Database" → "PostgreSQL"
+   - **Environment Variables:**
+     - `NODE_ENV=production`
+     - `PORT=3000`
+     - `DATABASE_URL` (auto-set by PostgreSQL service)
+   - **Build Command:** `npm install && npm run prisma:generate && npm run build`
+   - **Start Command:** `npm run prisma:migrate:deploy && npm start`
+5. Copy your backend URL (e.g., `https://your-app.railway.app`)
+
+### Step 3: Deploy Frontend
+
+1. In Railway, click **"+ New"** → **"Static Site"**
+2. Connect same GitHub repo
+3. **Configure:**
+   - Root Directory: `frontend`
+   - Build Command: `npm install && npm run build`
+   - Output Directory: `dist`
+   - **Environment Variable:**
+     ```
+     VITE_API_URL=https://your-backend-url.railway.app/api
+     ```
+4. Deploy!
+
+### Step 4: Troubleshooting
+
+**If build fails:**
+- Set Root Directory to `backend` (for backend) or `frontend` (for frontend)
+- Ensure Builder is set to "NIXPACKS" (not Railpack)
+- Check logs in Railway dashboard
+
+**Camera not working?**
+- Railway provides HTTPS automatically (required for camera)
+- Grant camera permissions when prompted
+- Test on real device (not simulator)
+
+**Database issues?**
+- Migrations run automatically on deploy (`prisma:migrate:deploy`)
+- Check logs if migrations fail
+- Verify `DATABASE_URL` is set correctly
+
+---
+
+## Alternative: ngrok (Quick Testing)
 
 **Best for:** Quick testing on different networks, beta demos
 
@@ -21,11 +87,11 @@ npm run dev
 
 # Terminal 3 - Expose backend
 ngrok http 3000
-# Copy the HTTPS URL (e.g., https://abc123.ngrok.io)
+# Copy the HTTPS URL
 
 # Terminal 4 - Expose frontend
 ngrok http 5173
-# Copy the HTTPS URL (e.g., https://xyz789.ngrok.io)
+# Copy the HTTPS URL
 ```
 
 **Update frontend API URL:**
@@ -34,87 +100,10 @@ Create `frontend/.env`:
 VITE_API_URL=https://your-backend-ngrok-url.ngrok.io/api
 ```
 
-Then restart frontend: `npm run dev`
-
-**Access from anywhere:**
-- Frontend: `https://your-frontend-ngrok-url.ngrok.io`
-- Works on any network, any device
-- HTTPS enabled (required for camera access)
-
----
-
-### Option 2: Railway (Production-Ready - 30 minutes)
-
-**Best for:** Permanent beta deployment, multiple users
-
-1. **Sign up at [railway.app](https://railway.app)**
-
-2. **Create PostgreSQL Database:**
-   - New → Database → PostgreSQL
-   - Copy the `DATABASE_URL`
-
-3. **Deploy Backend:**
-   - New → GitHub Repo → Select your repo
-   - Add PostgreSQL service
-   - Set environment variables:
-     ```
-     DATABASE_URL=<from PostgreSQL service>
-     PORT=3000
-     NODE_ENV=production
-     ```
-   - Set root directory: `backend`
-   - Set start command: `npm start`
-   - Deploy
-
-4. **Deploy Frontend:**
-   - New → Static Site
-   - Connect GitHub repo
-   - Set root directory: `frontend`
-   - Set build command: `npm run build`
-   - Set output directory: `dist`
-   - Add environment variable:
-     ```
-     VITE_API_URL=https://your-backend-url.railway.app/api
-     ```
-   - Deploy
-
-**Access:** Railway provides HTTPS URLs automatically
-
----
-
-### Option 3: Render (Free Tier - 20 minutes)
-
-**Best for:** Free hosting with good performance
-
-1. **Sign up at [render.com](https://render.com)**
-
-2. **Create PostgreSQL Database:**
-   - New → PostgreSQL
-   - Copy connection string
-
-3. **Deploy Backend:**
-   - New → Web Service
-   - Connect GitHub repo
-   - Settings:
-     - Build Command: `cd backend && npm install`
-     - Start Command: `cd backend && npm start`
-     - Environment: Node
-   - Add environment variables:
-     ```
-     DATABASE_URL=<postgres connection string>
-     PORT=3000
-     NODE_ENV=production
-     ```
-
-4. **Deploy Frontend:**
-   - New → Static Site
-   - Connect GitHub repo
-   - Build Command: `cd frontend && npm install && npm run build`
-   - Publish Directory: `frontend/dist`
-   - Add environment variable:
-     ```
-     VITE_API_URL=https://your-backend.onrender.com/api
-     ```
+**Limitations:**
+- Free tier has session limits
+- URLs change on restart (unless paid)
+- Not for production traffic
 
 ---
 
@@ -131,10 +120,10 @@ Then restart frontend: `npm run dev`
 - [ ] Build for production: `npm run build`
 - [ ] Test build locally: `npm run preview`
 
-### Database
-- [ ] Run migrations on production database
-- [ ] Verify connection string is correct
-- [ ] Test database connection
+### Security
+- [ ] Verify `.env` files are in `.gitignore`
+- [ ] Never commit secrets to GitHub
+- [ ] Set environment variables in Railway dashboard (not in code)
 
 ---
 
@@ -154,9 +143,8 @@ VITE_API_URL=https://your-backend-url.com/api
 
 ---
 
-## Quick Start Commands
+## Local Development
 
-### Local Development
 ```bash
 # Backend
 cd backend
@@ -171,34 +159,17 @@ npm install
 npm run dev
 ```
 
-### Production Build
-```bash
-# Backend
-cd backend
-npm install
-npm run prisma:generate
-npm run prisma:migrate deploy
-npm run build
-npm start
-
-# Frontend
-cd frontend
-npm install
-npm run build
-# Serve dist/ folder
-```
-
 ---
 
 ## Mobile Testing
 
-After deployment, test on mobile:
+After deployment:
 1. Open deployed URL on phone
 2. Grant camera permissions
 3. Test barcode scanning
 4. Test all features
 
-**Note:** Camera requires HTTPS (ngrok, Railway, Render all provide this)
+**Note:** Camera requires HTTPS (Railway/ngrok provide this automatically)
 
 ---
 
@@ -217,24 +188,9 @@ After deployment, test on mobile:
 ### Database connection failed
 - Check `DATABASE_URL` format
 - Verify database is accessible
-- Run migrations: `npm run prisma:migrate deploy`
+- Run migrations: `npm run prisma:migrate:deploy`
 
 ---
 
-## Recommended for Beta: ngrok
-
-**Why ngrok for beta:**
-- ✅ Fastest setup (5 minutes)
-- ✅ HTTPS included
-- ✅ Works on any network
-- ✅ No credit card needed
-- ✅ Easy to share URLs
-- ✅ Perfect for testing
-
-**Limitations:**
-- Free tier has session limits
-- URLs change on restart (unless paid)
-- Not for production traffic
-
-**Upgrade path:** Move to Railway/Render when ready for production.
-
+**Recommended for Beta:** Railway (permanent, HTTPS, database included)  
+**Recommended for Quick Testing:** ngrok (5 minutes, temporary URLs)

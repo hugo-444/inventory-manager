@@ -3,7 +3,7 @@ services:
     name: inventory-manager-api
     env: node
     buildCommand: npm install && npm run prisma:generate
-    startCommand: npm run prisma:migrate deploy && npm start
+    startCommand: npm run prisma:migrate:deploy && npm start
     envVars:
       - key: NODE_ENV
         value: production

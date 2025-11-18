@@ -59,7 +59,10 @@ export async function productRoutes(fastify: FastifyInstance) {
         status: request.query.status,
         q: request.query.q,
       });
-      return reply.send(products);
+      return reply
+        .type('application/json')
+        .code(200)
+        .send(products);
     }
   );
 
@@ -68,12 +71,14 @@ export async function productRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/api/products/upc/:upc',
     async (request: FastifyRequest<{ Params: { upc: string } }>, reply: FastifyReply) => {
+      // getByUpc with createIfNotFound=true always returns a product (creates stub if needed)
       const product = await ProductService.getByUpc(request.params.upc, true);
+      
+      // Add needsConfiguration flag for frontend
       if (!product) {
         return reply.code(404).send({ error: 'Product not found' });
       }
-      
-      // Add needsConfiguration flag for frontend
+
       const response = {
         ...product,
         needsConfiguration: product.status === 'UNCONFIGURED',
@@ -87,11 +92,12 @@ export async function productRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/api/products/scan',
     async (request: FastifyRequest<{ Body: { upc: string } }>, reply: FastifyReply) => {
+      // getByUpc with createIfNotFound=true always returns a product (creates stub if needed)
       const product = await ProductService.getByUpc(request.body.upc, true);
+      
       if (!product) {
         return reply.code(404).send({ error: 'Product not found' });
       }
-      
       const response = {
         ...product,
         needsConfiguration: product.status === 'UNCONFIGURED',

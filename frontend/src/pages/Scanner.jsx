@@ -24,6 +24,7 @@ export default function Scanner() {
   const [cameraError, setCameraError] = useState(null);
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  const scannerElementRef = useRef(null);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -206,7 +207,18 @@ export default function Scanner() {
         throw new Error('Camera requires HTTPS. Please access via HTTPS URL.');
       }
 
-      const html5QrCode = new Html5Qrcode('scanner-reader');
+      // Wait for DOM to update and element to be available
+      // Use a small delay to ensure React has rendered the element
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Check if element exists (try both ref and getElementById)
+      const element = scannerElementRef.current || document.getElementById('scanner-reader');
+      if (!element) {
+        throw new Error('Scanner element not found. Please try again.');
+      }
+
+      const elementId = element.id || 'scanner-reader';
+      const html5QrCode = new Html5Qrcode(elementId);
       html5QrCodeRef.current = html5QrCode;
 
       // Get available cameras with better error handling
@@ -403,7 +415,11 @@ export default function Scanner() {
           </div>
         ) : (
           <div className="scanner-active">
-            <div id="scanner-reader" style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}></div>
+            <div 
+              id="scanner-reader" 
+              ref={scannerElementRef}
+              style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}
+            ></div>
             {cameraError && (
               <div className="error-message" style={{ marginTop: '1rem' }}>
                 {cameraError}

@@ -29,11 +29,6 @@ export default function Products() {
   const [departments, setDepartments] = useState([]);
   const [styles, setStyles] = useState([]);
 
-  useEffect(() => {
-    loadProducts();
-    loadFilterData();
-  }, []);
-
   const loadFilterData = async () => {
     try {
       const [depts, stls] = await Promise.all([
@@ -62,58 +57,54 @@ export default function Products() {
   }, [searchQuery, products]);
 
   const loadProducts = async () => {
+    console.log('🚀 loadProducts called - fetching all products');
     try {
       setLoading(true);
       setError(null);
       
-      // Build query params from filters
-      const params = {};
-      if (filters.departmentId) params.departmentId = filters.departmentId;
-      if (filters.styleId) params.styleId = filters.styleId;
-      if (filters.status) params.status = filters.status;
+      console.log('📡 Calling api.getProducts() with no params...');
+      const data = await api.getProducts();
       
-      const data = await api.getProducts(params);
+      console.log('✅ api.getProducts returned:', {
+        dataType: typeof data,
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 'N/A'
+      });
       
-      // Apply price filter client-side (since API doesn't support it yet)
-      let filtered = data;
-      if (filters.minPrice) {
-        filtered = filtered.filter(p => p.price !== null && p.price !== undefined && p.price >= parseFloat(filters.minPrice));
-      }
-      if (filters.maxPrice) {
-        filtered = filtered.filter(p => p.price !== null && p.price !== undefined && p.price <= parseFloat(filters.maxPrice));
+      // Validate data structure
+      if (!Array.isArray(data)) {
+        console.error('❌ Invalid data format - expected array, got:', typeof data, data);
+        throw new Error('Invalid response format: expected array of products');
       }
       
-      setProducts(filtered);
-      setFilteredProducts(filtered);
+      console.log('✅ Data is array with', data.length, 'products');
+      if (data.length > 0) {
+        console.log('📦 First product sample:', data[0]);
+      }
+      
+      console.log('💾 Setting products state...');
+      setProducts(data);
+      setFilteredProducts(data);
+      console.log('✅ Products state updated with', data.length, 'products');
     } catch (err) {
-      console.error('Failed to load products:', err);
+      console.error('❌ Failed to load products - Full error:', {
+        message: err.message,
+        stack: err.stack,
+        error: err
+      });
       setError('Failed to load products: ' + (err.message || 'Unknown error'));
       showNotification('Failed to load products: ' + (err.message || 'Unknown error'), 'error');
     } finally {
+      console.log('🏁 loadProducts finally block - setting loading to false');
       setLoading(false);
     }
   };
 
-  // Reload products when filters change
+  // Load products and filter data on mount
   useEffect(() => {
     loadProducts();
-  }, [filters.departmentId, filters.styleId, filters.status]);
-
-  // Apply price filters after products load
-  useEffect(() => {
-    if (filters.minPrice || filters.maxPrice) {
-      let filtered = products;
-      if (filters.minPrice) {
-        filtered = filtered.filter(p => p.price !== null && p.price !== undefined && p.price >= parseFloat(filters.minPrice));
-      }
-      if (filters.maxPrice) {
-        filtered = filtered.filter(p => p.price !== null && p.price !== undefined && p.price <= parseFloat(filters.maxPrice));
-      }
-      setFilteredProducts(filtered);
-    } else {
-      setFilteredProducts(products);
-    }
-  }, [filters.minPrice, filters.maxPrice, products]);
+    loadFilterData();
+  }, []);
 
   const getTotalStock = (product) => {
     const backroomStock = product.backStock?.reduce((sum, s) => sum + s.qty, 0) || 0;
@@ -260,7 +251,19 @@ export default function Products() {
   };
 
   if (loading) return <div className="loading">Loading products...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+  if (error) {
+    return (
+      <div className="products-page">
+        <h1 className="page-title">Products</h1>
+        <div className="error-message" style={{ padding: '1rem', margin: '1rem 0' }}>
+          {error}
+          <div style={{ marginTop: '0.5rem', fontSize: '14px', color: '#666' }}>
+            Check browser console for details. Verify backend is running at the correct URL.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="products-page">
@@ -463,9 +466,24 @@ export default function Products() {
       </form>
 
       <div className="products-list">
-        {filteredProducts.map((product) => {
-          const totalStock = getTotalStock(product);
-          return (
+        {filteredProducts.length === 0 && !loading ? (
+          <div style={{ 
+            padding: '2rem', 
+            textAlign: 'center', 
+            color: '#6b7280',
+            fontSize: '14px'
+          }}>
+            <p>No products found.</p>
+            {products.length === 0 && (
+              <p style={{ marginTop: '0.5rem', fontSize: '12px' }}>
+                Try adding a product or check if the backend is connected.
+              </p>
+            )}
+          </div>
+        ) : (
+          filteredProducts.map((product) => {
+            const totalStock = getTotalStock(product);
+            return (
             <div
               key={product.id}
               className="product-card"
@@ -500,7 +518,8 @@ export default function Products() {
               </svg>
             </div>
           );
-        })}
+          })
+        )}
       </div>
 
       <Modal
